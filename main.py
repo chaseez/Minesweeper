@@ -108,6 +108,8 @@ class MineSweeperBoard():
 
 class MineSweeperGUI():
     def __init__(self):
+        pygame.init()
+
         self.board_rect = []
         self.board_size = 15
         self.board = MineSweeperBoard(self.board_size, 7, 7)
@@ -135,7 +137,7 @@ class MineSweeperGUI():
 
         # Define the dimensions of
         # screen object(width,height)
-        self.screen = pygame.display.set_mode((self.height, self.width))
+        self.screen = pygame.display.set_mode((self.height, self.width), pygame.SCALED)
 
         # Set the caption of the screen
         pygame.display.set_caption('Mine Sweeper')
@@ -152,7 +154,17 @@ class MineSweeperGUI():
         # Variable to keep our game loop running
         self.game_state = self.RUNNING
 
+        self.show_menu()
         self.game_loop()
+
+    def show_menu(self):
+        if not pygame.font:
+            pygame.font.init()
+
+        font = pygame.font.Font(None, 64)
+        text = font.render("Pummel The Chimp, And Win $$$", True, (10, 10, 10))
+        textpos = text.get_rect(centerx=self.width / 2, y=self.height / 2)
+        self.screen.blit(text, textpos)
 
     def game_loop(self):
         # game loop
@@ -202,7 +214,7 @@ class MineSweeperGUI():
                                         self.game_state = self.EXIT
                                     if square.surrounding_bombs == 0:
                                         self.board.discover_squares(square.row, square.col)
-                                    self.draw_board()
+                                    self.draw_board(first_click)
                                     self.show_discovered()
                                     # self.board.print_board()
                                     found = True
@@ -253,9 +265,9 @@ class MineSweeperGUI():
                 can_flag = False
 
             if not drawn:
-                drawn = self.draw_board()
+                drawn = self.draw_board(first_click)
 
-    def draw_board(self):
+    def draw_board(self, first_click):
         self.board_rect = []
         # Starting at in at the coord (50,50)
         y = 50
@@ -264,8 +276,9 @@ class MineSweeperGUI():
             row_rect = []
             for square in row:
                 rect = Rect(x, y, 30, 30)
-                pygame.draw.rect(self.screen, self.GREY, rect)
-                pygame.display.update()
+                if first_click:
+                    pygame.draw.rect(self.screen, self.GREY, rect)
+                    pygame.display.update()
                 x += 35
 
                 # Add tuple of rectangle with the square
@@ -312,5 +325,4 @@ class MineSweeperGUI():
 
 
 if __name__ == "__main__":
-
     MineSweeperGUI()
