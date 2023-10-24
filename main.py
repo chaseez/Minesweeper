@@ -5,6 +5,52 @@ from pygame import Rect
 
 from square import Square
 
+class MineSweeperBot():
+    def __init__(self, starting_row, starting_col):
+        """
+        Structure for incomplete_squares = {}
+
+        OUTER DICTIONARY (key=surrounding_bombs, value=dictionary)
+        {
+            INNER DICTIONARY (key=num_undiscovered_squares, value=list)
+            1: {
+                    LIST VALUES (squares that have "key" number of undiscovered and unflagged neighbors)
+                    1:[],
+                    2:[]
+                },
+        }
+        """
+        self.incomplete_squares = {}
+        self.set_up_dictionary()
+
+        self.starting_row = starting_row
+        self.starting_col = starting_col
+
+
+    def set_up_dictionary(self):
+        for i in range(1,9):
+            self.incomplete_squares[i] = {}
+            for j in range(1,9):
+                self.incomplete_squares[i][j] = []
+
+    def first_click(self):
+        pass
+
+    def random_guess(self):
+        pass
+
+    def pick_a_square(self):
+        pass
+
+    def can_pick(self):
+        return False
+
+    def flag_a_square(self):
+        pass
+
+    def can_flag(self):
+        return False
+
 
 class MineSweeperBoard():
     def __init__(self, board_size, row, col):
@@ -153,8 +199,6 @@ class MineSweeperGUI():
 
         # Variable to keep our game loop running
         self.game_state = self.RUNNING
-
-        self.show_menu()
         self.game_loop()
 
     def show_menu(self):
@@ -321,7 +365,6 @@ class MineSweeperGUI():
                 color = self.WHITE
             pygame.draw.rect(self.screen, color, rect)
             pygame.display.update()
-
 
 
 if __name__ == "__main__":
