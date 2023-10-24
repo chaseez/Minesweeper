@@ -158,6 +158,7 @@ class MineSweeperGUI():
         # game loop
         drawn = False
         first_click = True
+        can_flag = True
         total_flags  = self.board.difficulty
         while self.game_state:
 
@@ -210,6 +211,7 @@ class MineSweeperGUI():
                                 break
 
                     elif event.button == pygame.BUTTON_RIGHT:
+                        if not can_flag: continue
                         # Initializing the variables
                         top_bound = 0
                         bottom_bound = 0
@@ -248,7 +250,7 @@ class MineSweeperGUI():
                                 break
 
             if total_flags == 0:
-                self.game_state = self.EXIT
+                can_flag = False
 
             if not drawn:
                 drawn = self.draw_board()
@@ -283,26 +285,27 @@ class MineSweeperGUI():
         # for row in self.board_rect:
         #     for rect, square in row:
         for rect, square in discovered:
-            if square.surrounding_bombs == 1:
-                color = self.BLUE
-            elif square.surrounding_bombs == 2:
-                color = self.GREEN
-            elif square.surrounding_bombs == 3:
-                color = self.RED
-            elif square.surrounding_bombs == 4:
-                color = self.PURPLE
-            elif square.surrounding_bombs == 5:
-                color = self.ORANGE
-            elif square.surrounding_bombs == 6:
-                color = self.CYAN
-            elif square.surrounding_bombs == 7:
-                color = self.PINK
-            elif square.surrounding_bombs == 8:
-                color = self.MAROON
-            elif square.flagged:
+            if not square.flagged:
+                if square.surrounding_bombs == 1:
+                    color = self.BLUE
+                elif square.surrounding_bombs == 2:
+                    color = self.GREEN
+                elif square.surrounding_bombs == 3:
+                    color = self.RED
+                elif square.surrounding_bombs == 4:
+                    color = self.PURPLE
+                elif square.surrounding_bombs == 5:
+                    color = self.ORANGE
+                elif square.surrounding_bombs == 6:
+                    color = self.CYAN
+                elif square.surrounding_bombs == 7:
+                    color = self.PINK
+                elif square.surrounding_bombs == 8:
+                    color = self.MAROON
+                elif square.surrounding_bombs == 0:
+                    color = self.SILVER
+            else:
                 color = self.WHITE
-            elif square.surrounding_bombs == 0:
-                color = self.SILVER
             pygame.draw.rect(self.screen, color, rect)
             pygame.display.update()
 
