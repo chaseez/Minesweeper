@@ -6,7 +6,7 @@ from pygame import Rect
 from square import Square
 
 class MineSweeperBot():
-    def __init__(self, starting_row, starting_col):
+    def __init__(self):
         """
         Structure for incomplete_squares = {}
 
@@ -23,8 +23,8 @@ class MineSweeperBot():
         self.incomplete_squares = {}
         self.set_up_dictionary()
 
-        self.starting_row = starting_row
-        self.starting_col = starting_col
+        self.starting_row = None
+        self.starting_col = None
 
 
     def set_up_dictionary(self):
@@ -33,8 +33,10 @@ class MineSweeperBot():
             for j in range(1,9):
                 self.incomplete_squares[i][j] = []
 
-    def first_click(self):
-        pass
+    def first_click(self, board_size):
+        self.starting_col = random.randint(0,board_size-1)
+        self.starting_row = random.randint(0,board_size-1)
+        return True, self.starting_row, self.starting_col
 
     def random_guess(self):
         pass
@@ -50,6 +52,17 @@ class MineSweeperBot():
 
     def can_flag(self):
         return False
+
+    def update_discovered_squares(self, discovered_numbered_squares, surrounding_squares_map):
+        for square in discovered_numbered_squares:
+            undiscovered_surrounding_squares = [undisc for undisc in surrounding_squares_map[f"{square.row},{square.col}"] if not(undisc.discovered)]
+            self.incomplete_squares[square.surrounding_bombs][len(undiscovered_surrounding_squares)].append(square)
+        print(surrounding_squares_map)
+        print()
+        for key,value in self.incomplete_squares.items():
+            for k,v in value.items():
+                if len(v) > 0:
+                    print(f'Num Bombs: {key}, Num Undiscovered: {k}, Num Squares: {len(v)}')
 
 
 class MineSweeperBoard():
@@ -151,6 +164,18 @@ class MineSweeperBoard():
                     row_details.append(str(col.surrounding_bombs))
             print("\t".join(row_details))
 
+    def get_surrounding_squares(self, d_square):
+        surrounding_squares = []
+        for row_index in range(d_square.row - 1, d_square.row + 2):
+            if self.TOP_ROW <= row_index <= self.BOTTOM_ROW:
+                for col_index in range(d_square.col - 1, d_square.col + 2):
+                    if self.LEFT_MOST_COL <= col_index <= self.RIGHT_MOST_COL:
+                        if self.board[row_index][col_index] == d_square: continue
+                        if self.board[row_index][col_index].flagged: continue
+
+                        surrounding_squares.append(self.board[row_index][col_index])
+        return surrounding_squares
+
 
 class MineSweeperGUI():
     def __init__(self):
@@ -159,6 +184,8 @@ class MineSweeperGUI():
         self.board_rect = []
         self.board_size = 15
         self.board = MineSweeperBoard(self.board_size, 7, 7)
+
+        self.bot = MineSweeperBot()
 
         # Define the background colour
         # using RGB color coding.
@@ -196,6 +223,7 @@ class MineSweeperGUI():
 
         self.RUNNING = True
         self.EXIT = False
+        self.USE_BOT = False
 
         # Variable to keep our game loop running
         self.game_state = self.RUNNING
@@ -217,93 +245,109 @@ class MineSweeperGUI():
         can_flag = True
         total_flags  = self.board.difficulty
         while self.game_state:
+            if not self.USE_BOT:
+                # for loop through the event queue
+                for event in pygame.event.get():
 
-            # for loop through the event queue
-            for event in pygame.event.get():
+                    # Check for QUIT event
+                    if event.type == pygame.QUIT:
+                        self.game_state = self.EXIT
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        # When a box is clicked
+                        if event.button == pygame.BUTTON_LEFT:
+                            # Initializing the variables
+                            top_bound = 0
+                            bottom_bound = 0
+                            right_bound = 0
+                            left_bound = 0
+                            found = False
 
-                # Check for QUIT event
-                if event.type == pygame.QUIT:
-                    self.game_state = self.EXIT
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    # When a box is clicked
-                    if event.button == pygame.BUTTON_LEFT:
-                        # Initializing the variables
-                        top_bound = 0
-                        bottom_bound = 0
-                        right_bound = 0
-                        left_bound = 0
-                        found = False
+                            for row in self.board_rect:
+                                for rect, square in row:
+                                    top_bound = rect.y
+                                    bottom_bound = rect.y + self.rect_size
 
-                        for row in self.board_rect:
-                            for rect, square in row:
-                                top_bound = rect.y
-                                bottom_bound = rect.y + self.rect_size
+                                    left_bound = rect.x
+                                    right_bound = rect.x + self.rect_size
 
-                                left_bound = rect.x
-                                right_bound = rect.x + self.rect_size
+                                    # event.pos = (x,y)
+                                    # event.pos[0] = x
+                                    # event.pos[1] = y
+                                    if left_bound <= event.pos[0] <= right_bound and \
+                                        top_bound <= event.pos[1] <= bottom_bound:
+                                        if first_click:
+                                            # Make sure the first click isn't landed on a bomb
+                                            self.board = MineSweeperBoard(self.board_size, square.row, square.col)
 
-                                # event.pos = (x,y)
-                                # event.pos[0] = x
-                                # event.pos[1] = y
-                                if left_bound <= event.pos[0] <= right_bound and \
-                                    top_bound <= event.pos[1] <= bottom_bound:
-                                    if first_click:
-                                        # Make sure the first click isn't landed on a bomb
-                                        self.board = MineSweeperBoard(self.board_size, square.row, square.col)
-
-                                        first_click = False
-                                    square.discovered = True
-                                    # square.print_info()
-                                    if square.is_bomb:
-                                        self.game_state = self.EXIT
-                                    if square.surrounding_bombs == 0:
-                                        self.board.discover_squares(square.row, square.col)
-                                    self.draw_board(first_click)
-                                    self.show_discovered()
-                                    # self.board.print_board()
-                                    found = True
+                                            first_click = False
+                                        square.discovered = True
+                                        # square.print_info()
+                                        if square.is_bomb:
+                                            self.game_state = self.EXIT
+                                        if square.surrounding_bombs == 0:
+                                            self.board.discover_squares(square.row, square.col)
+                                        self.draw_board(first_click)
+                                        self.show_discovered()
+                                        # self.board.print_board()
+                                        found = True
+                                        break
+                                if found:
                                     break
-                            if found:
-                                break
 
-                    elif event.button == pygame.BUTTON_RIGHT:
-                        if not can_flag: continue
-                        # Initializing the variables
-                        top_bound = 0
-                        bottom_bound = 0
-                        right_bound = 0
-                        left_bound = 0
-                        found = False
+                        elif event.button == pygame.BUTTON_RIGHT:
+                            if not can_flag: continue
+                            # Initializing the variables
+                            top_bound = 0
+                            bottom_bound = 0
+                            right_bound = 0
+                            left_bound = 0
+                            found = False
 
-                        for row in self.board_rect:
-                            for rect, square in row:
-                                top_bound = rect.y
-                                bottom_bound = rect.y + self.rect_size
+                            for row in self.board_rect:
+                                for rect, square in row:
+                                    top_bound = rect.y
+                                    bottom_bound = rect.y + self.rect_size
 
-                                left_bound = rect.x
-                                right_bound = rect.x + self.rect_size
+                                    left_bound = rect.x
+                                    right_bound = rect.x + self.rect_size
 
-                                # event.pos = (x_pos, y_pos)
-                                # event.pos[0] = x_pos
-                                # event.pos[1] = y_pos
-                                # Checking if the click was within a square
-                                if left_bound <= event.pos[0] <= right_bound and top_bound <= event.pos[1] <= bottom_bound:
+                                    # event.pos = (x_pos, y_pos)
+                                    # event.pos[0] = x_pos
+                                    # event.pos[1] = y_pos
+                                    # Checking if the click was within a square
+                                    if left_bound <= event.pos[0] <= right_bound and top_bound <= event.pos[1] <= bottom_bound:
 
-                                    if not square.flagged:
-                                        pygame.draw.rect(self.screen, self.WHITE, rect)
-                                        square.flagged = True
-                                        total_flags -= 1
-                                    else:
-                                        pygame.draw.rect(self.screen, self.GREY, rect)
-                                        square.flagged = False
-                                        total_flags += 1
+                                        if not square.flagged:
+                                            pygame.draw.rect(self.screen, self.WHITE, rect)
+                                            square.flagged = True
+                                            total_flags -= 1
+                                        else:
+                                            pygame.draw.rect(self.screen, self.GREY, rect)
+                                            square.flagged = False
+                                            total_flags += 1
 
-                                    pygame.display.update()
+                                        pygame.display.update()
 
-                                    found = True
+                                        found = True
+                                        break
+                                if found:
                                     break
-                            if found:
-                                break
+            else:
+                if first_click:
+                    first_click, row, col = self.bot.first_click(self.board_size)
+                    square = self.board.board[row][col]
+                    square.discovered = True
+                    self.board.discover_squares(square.row, square.col)
+
+                # Sort through all the discovered squares that have at least one bomb surrounding it
+                discovered_numbered_squares = [square for row in self.board.board for square in row if square.discovered and square.surrounding_bombs != 0]
+                d_squares_map = {}
+                for d_square in discovered_numbered_squares:
+                    surrounding_squares = self.board.get_surrounding_squares(d_square)
+                    d_squares_map[f'{d_square.row},{d_square.col}'] = surrounding_squares
+
+                self.bot.update_discovered_squares(discovered_numbered_squares, d_squares_map)
+                self.game_state = self.EXIT
 
             if total_flags == 0:
                 can_flag = False
